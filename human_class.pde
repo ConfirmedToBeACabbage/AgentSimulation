@@ -1,5 +1,3 @@
-import 
-
 class HumanBaby extends Agent {
   HumanBabyEye centereye;
   HumanBabyHat tophat;
