@@ -92,12 +92,11 @@ abstract class Agent {
           float random_talk = random(0, 10);
           if(random_talk == 1){
             agentSound = agentFilter.process(this.agentSound); // Set new sound according to own experience
-            print(" " + agentSound.intensity);
           }
         }
         
         // If the soundwave is close to our character we then act on it
-        if(distance <= 50) {
+        if(distance <= 50 && this.agentSound.talking == false) {
           agentSound = agentFilter.process(key.agentSound); // Set new sound
           print("||" + agentSound.maxInt);
         }
@@ -183,6 +182,7 @@ class Filter {
   Filter(Agent getReference, double moodP){ 
     mood = moodP; 
     parentReference = getReference;
+    memoryDictionary.put(parentReference, moodP);
   }
   
   // Filter Process
@@ -201,17 +201,13 @@ class Filter {
       Agent key = entry.getKey();
       double value = entry.getValue();
       
-      if(key != input.referenceParent){
-        continue;
-      }
-      
       // Adding up 
       if(sumDictionary.get(key) == null) {
         sumDictionary.put(key, zero); 
-        overall_average += sigmoid(1);
+        overall_average += 1;
       } else { 
         double weight = (relationshipDictionary.get(key) != null) ? 2 : 1;
-        double result = sigmoid(value + sumDictionary.get(key) + weight);
+        double result = value + sumDictionary.get(key) + weight;
         sumDictionary.put(key, result); 
         overall_average += result; //<>//
       }
@@ -229,28 +225,21 @@ class Filter {
       
       if(relationshipDictionary.get(key) == null) {
         relationshipDictionary.put(key, zero); 
-        average_sum += sigmoid(zero);
+        average_sum += zero;
       } else { 
-        double result = sigmoid(value * mood);
+        double result = value * mood;
         relationshipDictionary.put(key, result); 
-        average_sum += sigmoid(result);
+        average_sum += result;
       }
       
     }
     
-    print(100 * (average_sum * mood));
-    print(" ");
     SoundWave response = new SoundWave(parentReference, average_sum * mood);
     return response; 
   }
   
   public double getMood() { 
     return this.mood;
-  }
-  
-  // Util
-  double sigmoid(double x) {
-    return 1 / (1 + Math.exp(-x)); 
   }
   
 }
