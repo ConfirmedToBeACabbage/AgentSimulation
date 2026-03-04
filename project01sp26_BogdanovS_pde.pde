@@ -6,30 +6,66 @@ Agent humanbaby;
 
 Map<Integer, Agent> agentDict = new HashMap<>(); 
 Agent popped; 
-
-// Distance object
-Map<Agent, Float> agentDistDict = new HashMap<>();
+Agent inspecting = null;
 
 void setup() {
   size(860, 860);
-  //human = new Human(width/2, height/2, 0.01, 40);
-  //humanbaby = new HumanBaby(width/2, height/2, 0.0001);
   
-  for(int i = 0; i < 10; i++) {
-    Agent put = new Human(random(100, 700), random(450, 700), 0.01, 40);
+  for(int i = 0; i < 2; i++) {
+    float xPlace = random(100, 700);
+    float yPlace = random(350, 700);
+    
+    Agent put = new Human(xPlace, yPlace, 0.01, 40);
     agentDict.put(i, put);
-    agentDistDict.put(put, float(0));
   }
 }
 
 void draw() {
   background(204);
+  
+  // The line that borders the simulation area and then interface
+  line(0, 200, 860, 200);
+  
+  // The line for the agent view
+  line(300, 0, 300, 200);
+  
+  // Inspecting
+  if(inspecting != null) {
+    inspecting.display(130, 75);
+  }
+  
   for(int i = 0; i < agentDict.size(); i++){
     popped = agentDict.get(i);
-    // Going to be part of mechanic testing
+    
     popped.soundOut();
     popped.colCheck(agentDict);
     popped.update();
+    
+    // Interface button
+    pushMatrix();
+    circle(popped.x, popped.y, 15);
+    popMatrix();
+    
     popped.display();
-  }
+  }  
+}
+
+void mouseReleased() {
+  
+  for(Map.Entry<Integer, Agent> agent : agentDict.entrySet()){
+      Agent key = agent.getValue();
+      
+      float distance = dist(mouseX, mouseY, key.x, key.y);
+      
+      print("||" + distance);
+      
+      // Clicked
+      if(distance <= 15) {
+        inspecting = key;
+        break;
+      } else {
+        inspecting = null; 
+      }
+    }
+   
 }

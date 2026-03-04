@@ -11,7 +11,7 @@ class HumanBaby extends Agent {
   } 
   
   @Override 
-  void display() {
+  void display() {    
     stroke(1);
     fill(red, blue, green);
     pushMatrix();
@@ -20,6 +20,22 @@ class HumanBaby extends Agent {
     popMatrix();
     centereye.display();
     tophat.display();
+  }
+ 
+  void display(float xGet, float yGet) {
+    stroke(1);
+    fill(red, blue, green);
+    pushMatrix();
+    translate(xGet, yGet);
+    circle(0, 0, dim);
+    popMatrix();
+    centereye.display();
+    tophat.display();
+  }
+ 
+  @Override 
+  float halfActualSize(){
+    return dim/2; 
   }
 }
 
@@ -159,6 +175,26 @@ class Human extends Agent {
     leftfoot.display();
     rightfoot.display();
   }
+  
+  void display(float xGet, float yGet) {
+    noStroke();
+    fill(red, blue, green);
+    pushMatrix();
+    translate(xGet, yGet);
+    rect(0, 0, dim, dim, 28);
+    popMatrix();
+    leftarm.display(xGet, yGet);
+    rightarm.display(xGet, yGet);
+    lefteye.display(xGet, yGet);
+    righteye.display(xGet, yGet);
+    leftfoot.display(xGet, yGet);
+    rightfoot.display(xGet, yGet);
+  }
+  
+  @Override 
+  float halfActualSize(){
+    return dim/2; 
+  }
 } 
 
 class HumanArm { 
@@ -172,12 +208,13 @@ class HumanArm {
     bob_speed = bobSpeedP;
     rotation = 0;
   }
-  void display() {
+  
+  void displayLogic(float x, float y){
     stroke(1);
     pushMatrix(); 
     
-    if(side == 0) translate(parentReference.x-8, parentReference.y+10);
-    else if(side == 1) translate(parentReference.x+parentReference.dim+2, parentReference.y+10);
+    if(side == 0) translate(x-8, y+10);
+    else if(side == 1) translate(x+parentReference.dim+2, y+10);
     
     if(parentReference.idle == false) {
       if(parentReference.direction_choose_x >= 0){
@@ -197,6 +234,14 @@ class HumanArm {
     rotate(rotation);
     rect(0, 0, size * 0.2, size * 0.9, 28);
     popMatrix();
+  }
+  
+  void display() {
+    displayLogic(parentReference.x, parentReference.y);
+  }
+  
+  void display(float xGet, float yGet) {
+    displayLogic(xGet, yGet);
   }
 } 
 
@@ -221,12 +266,13 @@ class HumanEye {
     eye_pause = 0;
     eye_move = 0;
   }
-  void display() {
+  
+  void displayLogic(float x, float y) {
     stroke(1);
     pushMatrix(); 
     
-    if(side == 0) translate(parentReference.x+6, parentReference.y+15);
-    else if(side == 1) translate(parentReference.x+parentReference.dim-6, parentReference.y+15);
+    if(side == 0) translate(x+6, y+15);
+    else if(side == 1) translate(x+parentReference.dim-6, y+15);
     
     if(blink_await_counter != blink_await){
      blink_await_counter += 1; 
@@ -274,11 +320,21 @@ class HumanEye {
       }
     }
    
-    if(side == 0) translate(parentReference.x+6+eye_move, parentReference.y+15);
-    else if(side == 1) translate(parentReference.x+parentReference.dim-6-size*0.1+eye_move, parentReference.y+15);
+    if(side == 0) translate(x+6+eye_move, y+15);
+    else if(side == 1) translate(x+parentReference.dim-6-size*0.1+eye_move, y+15);
     ellipse(0, 0, size*0.1, size*0.1); 
     popMatrix();  
   }
+  
+  void display() {
+    displayLogic(parentReference.x, parentReference.y);
+  }
+  
+  void display(float xGet, float yGet){
+    displayLogic(xGet, yGet); 
+  }
+  
+  
   
 }
 
@@ -293,12 +349,13 @@ class HumanFoot {
     bob_speed = bobSpeedP;
     rotation = 0;
   }
-  void display() {
+  
+  void displayLogic(float x, float y){
     stroke(1);
     pushMatrix(); 
     
-    if(side == 0) translate(parentReference.x-6, parentReference.y+parentReference.dim+1);
-    else if(side == 1) translate(parentReference.x+parentReference.dim-10, parentReference.y+parentReference.dim+1);
+    if(side == 0) translate(x-6, y+parentReference.dim+1);
+    else if(side == 1) translate(x+parentReference.dim-10, y+parentReference.dim+1);
     
     if(parentReference.idle == false) {
       if(parentReference.direction_choose_x >= 0){
@@ -318,5 +375,13 @@ class HumanFoot {
     rotate(rotation);
     rect(0, 0, size, size * 0.4, 28);
     popMatrix();
+  }
+  
+  void display() {
+    displayLogic(parentReference.x, parentReference.y);
+  }
+  
+  void display(float xGet, float yGet){
+    displayLogic(xGet, yGet); 
   }
 } 
