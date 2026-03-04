@@ -2,6 +2,9 @@ class HumanBaby extends Agent {
   HumanBabyEye centereye;
   HumanBabyHat tophat;
   int dim;
+  float s = 0;
+  int alive_time = 0;
+  
   
   HumanBaby(float xpos, float ypos, float s) { 
     super(xpos, ypos, s);
@@ -9,6 +12,15 @@ class HumanBaby extends Agent {
     tophat = new HumanBabyHat(this);
     dim = 20;
   } 
+  
+  Human live() {
+    alive_time++;
+    
+    if(alive_time >= 10){
+      return new Human(x, y, s, (float)40);
+    }
+    return null;
+  }
   
   @Override 
   void display() {    
