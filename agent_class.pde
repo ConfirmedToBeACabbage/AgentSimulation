@@ -124,6 +124,19 @@ abstract class Agent {
     agentSound.display();
   }
   
+  // Debugging interfaces
+  void showRelationshipsFlag(){
+    this.showRelationships = !this.showRelationships;
+  }
+  
+  void showRaycastsFlag(){
+    this.showRaycasts = !this.showRaycasts;
+  }
+  
+  void showSoundRaycastsFlag(){
+    this.showSoundRaycasts = !this.showSoundRaycasts;
+  }
+  
   abstract void display();
   abstract void display(float xGet, float yGet);
   abstract float halfActualSize();
