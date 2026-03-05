@@ -2,15 +2,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 Map<Integer, Agent> agentDict = new HashMap<>(); 
+Map<Agent, Integer> deadAgentDict = new HashMap<>(); 
 Map<Integer, HumanBaby> babyDict = new HashMap<>();
+Map<Human, Integer> babyGrownDict = new HashMap<>();
 Map<Integer, Object> rockObjDict = new HashMap<>();
-Map<Integer, Object> grassObjDict = new HashMap<>();
+Map<Integer, Object> foodObjDict = new HashMap<>();
 Object poppedObj;
 Agent popped; 
 Agent inspecting = null;
 float year = 0;
-
-int numbBaby = 0;
 
 // Button
 Button[] buttons; 
@@ -75,7 +75,7 @@ void setup() {
     }
     
     newObj = new Food(xGrass, yGrass, random(10, 12), (int)random(10, 20));
-    grassObjDict.put(i, newObj);
+    foodObjDict.put(i, newObj);
   }
   
   // Init buttons
@@ -105,8 +105,8 @@ void draw() {
      poppedObj.display();
   }
   
-  for(int i = 0; i < grassObjDict.size(); i++) {
-     poppedObj = grassObjDict.get(i);
+  for(int i = 0; i < foodObjDict.size(); i++) {
+     poppedObj = foodObjDict.get(i);
      
      poppedObj.display();
   }
@@ -124,12 +124,18 @@ void draw() {
     fill(0);
     
     // Some global stats
-    textSize(30);
+    textSize(20);
     text("Mood", 320, 70);
     text(inspecting.agentFilter.baseCalc(), 600, 70);
     
     text("Relationships", 320, 110);
     text(constrain(inspecting.agentFilter.agentPerAgentMemory.size() - 1, 0, inspecting.agentFilter.agentPerAgentMemory.size()), 600, 110);
+    
+    text("Hunger", 320, 150);
+    text(inspecting.hungry, 600, 150);
+    
+    text("Health", 320, 180);
+    text(inspecting.health, 600, 190);
     
   } else {
     
@@ -151,14 +157,15 @@ void draw() {
     }
     
     pushMatrix();
-    rect(600, 55, sum/counter * 100, 10); 
+    fill(100, (sum/counter) * 1000, 100);
+    rect(600, 55, 200, 10); 
     popMatrix();
     
     text("Human Number", 320, 110);
-    text(agentDict.size()-numbBaby, 600, 110);
+    text(agentDict.size() - deadAgentDict.size(), 600, 110);
     
     text("Baby number", 320, 150);
-    text(numbBaby, 600, 150);
+    text(babyDict.size() - babyGrownDict.size(), 600, 150);
   }
   
   int before_size = agentDict.size();
@@ -169,38 +176,47 @@ void draw() {
      continue;
     }
     
-    HumanBaby check = popped.babyCheck();
-    if(check != null){
-     print("||" + check);
-     babyDict.put(babyDict.size() + 1, check); 
-     numbBaby++;
+    if(popped.dead == true){
+      if(deadAgentDict.get(popped) == null) deadAgentDict.put(popped, 0); 
+    } else if(popped.dead == false){
+      popped.colCheckObj(rockObjDict, foodObjDict);
+    
+      popped.soundOut();
+      popped.colCheck(agentDict);
+      popped.update();
+      
+      // Interface button
+      pushMatrix();
+      circle(popped.x, popped.y, 15);
+      popMatrix();
+      
+      popped.display();
+      popped.relationshipDisplay();
+      
+      HumanBaby check = popped.babyCheck();
+      if(check != null){
+       print("||" + check);
+       babyDict.put(babyDict.size(), check); 
+      } 
     }
     
-    popped.soundOut();
-    popped.colCheck(agentDict);
-    popped.update();
-    
-    // Interface button
-    pushMatrix();
-    circle(popped.x, popped.y, 15);
-    popMatrix();
-    
-    popped.display();
-    popped.relationshipDisplay();
+    popped.healthUpdate();
   }
   
-  for(int i = 0; i < babyDict.size(); i++){
+  for(Map.Entry<Integer, HumanBaby> entry : babyDict.entrySet()){
+    HumanBaby hbPopped = entry.getValue();
+    
     year += 0.1;
-    HumanBaby hbPopped = babyDict.get(i); 
     
-    if(hbPopped == null || hbPopped.alive_time >= 100) continue;
+    //print("BABY WE BE POPPIN" + hbPopped);
+    if(hbPopped == null || hbPopped.grown_up) continue;
     
-    print("||" + year);
+    //print("||" + year);
     if(year >= 10){
       Human check = hbPopped.live(); 
       if(check != null) {
-        agentDict.put(agentDict.size() + 1, check);
-        numbBaby--; 
+        agentDict.put(babyDict.size(), check);
+        babyGrownDict.put(check, 0);
       }
       year = 0;
     }
@@ -208,6 +224,7 @@ void draw() {
     hbPopped.update();
     hbPopped.display();
   }
+
 }
 
 void mouseReleased() {

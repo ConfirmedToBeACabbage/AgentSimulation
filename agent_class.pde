@@ -8,7 +8,7 @@ abstract class Agent {
   int max_idle;
   
   // Sound 
-  SoundWave agentSound;
+  SoundWave agentSound = new SoundWave(this, 0);
   
   // Filter 
   Filter agentFilter = new Filter(this);
@@ -28,13 +28,19 @@ abstract class Agent {
   boolean agentOnRock = false;
   boolean agentOnFood = false;
   
+  boolean dead = false;
+  
   // Agent items
-  int eaten = 0;
-  int relationships = 0;
-  int kids = 0;
+  int eaten = 1;
+  int relationships = 1;
+  int kids = 1;
   
   float hungry = 0; // Loses itself by 0.01 every cycle
   float health = 100; // If starving loses itself by 0.01
+  
+  // On Object check
+  Object rock; 
+  Object food; 
   
   Agent(float xpos, float ypos, float s) { 
     x = xpos; 
@@ -54,15 +60,15 @@ abstract class Agent {
       
       if(moving_time == 30){
         idle = true;
-        direction_choose_x = random(-1, 1);
-        direction_choose_y = random(-1, 1);
+        direction_choose_x = random(-4, 4);
+        direction_choose_y = random(-4, 4);
      
         moving_time = 0;
         idle_time = 0;
       }
       
       x = constrain(x + direction_choose_x, 0, 860);
-      y = constrain(y + direction_choose_y, 210, 700);
+      y = constrain(y + direction_choose_y, 210, 850);
       
     } else {
       idle_time += 1;
@@ -84,8 +90,8 @@ abstract class Agent {
   }
   
   double[] GetAgentPosition(Agent from){
-    double change_x = this.x - (from.agentSound.x + from.halfActualSize());
-    double change_y = this.y - (from.agentSound.y + from.halfActualSize());
+    double change_x = this.x - (from.x + from.halfActualSize());
+    double change_y = this.y - (from.y + from.halfActualSize());
     
     double angle = Math.atan2(change_y, change_x);
     double[] calc = {(from.x + from.halfActualSize()) + (from.halfActualSize()/2) * Math.cos(angle), (from.y + from.halfActualSize()) + (from.halfActualSize()/2) * Math.sin(angle)};
@@ -94,28 +100,53 @@ abstract class Agent {
   
   double[] GetObjectPosition(Object from){
     float[] getValues = from.returnValues();
-    double change_x = this.x - (getValues[0] + getValues[2]);
-    double change_y = this.y - (getValues[1] + getValues[2]);
+    double change_x = this.x - (getValues[0] + getValues[2]/2);
+    double change_y = this.y - (getValues[1] + getValues[2]/2);
     
     double angle = Math.atan2(change_y, change_x);
-    double[] calc = {(getValues[0] + getValues[2]) + (getValues[2]) * Math.cos(angle), (getValues[1] + getValues[2]) + (getValues[2]/2) * Math.sin(angle)};
+    double[] calc = {(getValues[0]) + (getValues[2]/2) * Math.cos(angle), (getValues[1]) + (getValues[2]/2) * Math.sin(angle)};
     return calc;
   }
   
   // Health update
   void healthUpdate(){
-    hungry += 0.01;
+    if(health <= 0) dead = true;
+    
+    if(hungry <= 5) hungry += 0.00001;
     
     if(hungry >= 30){
-      eaten += eaten * (hungry); 
+      health -= 5; 
+    }
+    
+    if(this.rock != null && !this.agentOnRock){
+      this.hungry += 5;
+      this.health -= 20;
+      
+      this.hungry = constrain(this.hungry, 0, 100);
+      this.health = constrain(this.health, 0, 100);
+      
+      this.agentOnRock = true;
+    }
+    
+    if(this.food != null && !this.agentOnFood){
+      this.hungry -= 5;
+      this.health += 10;
+      
+      this.hungry = constrain(this.hungry, 0, 100);
+      this.health = constrain(this.health, 0, 100);
+      
+      this.agentOnFood = true;
     }
   }
   
   // Baby check 
   HumanBaby babyCheck() {
     if(babyHad) return null;
-    if(this.agentFilter.base >= 1.0 && this.health >= 50){
+    if(this.agentFilter.base >= 0.2 && this.health >= 50){
       this.babyHad = true;
+      //print("MAKING BABY");
+      //print(x);
+      //print(y);
       return new HumanBaby(x, y, speed);
     }
     return null;
@@ -130,51 +161,67 @@ abstract class Agent {
     // Loop food 
       // If we hit food we process a base of 0.5
   
-    int check = 0;
-    for(Map.Entry<Integer, Object> entry : rockDict.entrySet()){
-      Object key = entry.getValue();
+    // Independent check
+    if(this.rock != null) {
+      double[] other_pos = GetObjectPosition(this.rock);
+      float distance = dist(this.x + this.halfActualSize(), this.y + this.halfActualSize(), (float)other_pos[0], (float)other_pos[1]);
       
-      double[] other_pos = GetObjectPosition(key);
-      float distance = dist(this.x, this.y, (float)other_pos[0], (float)other_pos[1]);
-      
-      if(distance <= 50){
-        this.agentOnRock = true;
-        this.agentFilter.baseInteraction("rock", this);
-        this.hungry += 5;
-        break;
-      } 
-      
-      check++;
-      
+      if(distance >= this.rock.returnValues()[2]){
+        this.rock = null;
+        this.agentOnRock = false; 
+      }
     }
     
-    if(check == rockDict.size()-1){
-      this.agentOnRock = false;  
+    if(this.food != null) {
+      double[] other_pos = GetObjectPosition(this.food);
+      float distance = dist(this.x + this.halfActualSize(), this.y + this.halfActualSize(), (float)other_pos[0], (float)other_pos[1]);
+      
+      if(distance >= this.food.returnValues()[2]){
+        this.food = null;
+        this.agentOnRock = false; 
+      }
     }
     
-    check = 0;
-    
-    for(Map.Entry<Integer, Object> entry : foodDict.entrySet()){
-      Object key = entry.getValue();
+    if(this.rock == null) {
+      for(Map.Entry<Integer, Object> entry : rockDict.entrySet()){
+        Object key = entry.getValue();
+        
+        double[] other_pos = GetObjectPosition(key);
+        float distance = dist(this.x + this.halfActualSize(), this.y + this.halfActualSize(), (float)other_pos[0], (float)other_pos[1]);
+        
+        // DEBUG
+        //pushMatrix();
+        //line(this.x + this.halfActualSize(), this.y + this.halfActualSize(), (float)other_pos[0], (float)other_pos[1]); 
+        ////print("||" + distance);
+        //popMatrix();
+        
+        if(distance <= key.returnValues()[2] && !this.agentOnRock){
+          this.rock = key;
+          this.agentFilter.baseInteraction("rock", this);
+          break;
+        } 
       
-      double[] other_pos = GetObjectPosition(key);
-      float distance = dist(this.x, this.y, (float)other_pos[0], (float)other_pos[1]);
-      
-      if(distance <= 10){
-        this.agentOnFood = true;
-        this.agentFilter.baseInteraction("food", this);
-        this.hungry -= 5;
-        break;
-      } 
-      
-      check++;
-      
+      }  
     }
     
-    if(check == foodDict.size()-1){
-      this.agentOnFood = false;  
+    if(this.food == null) {
+       for(Map.Entry<Integer, Object> entry : foodDict.entrySet()){
+        Object key = entry.getValue();
+        
+        double[] other_pos = GetObjectPosition(key);
+        float distance = dist(this.x + this.halfActualSize(), this.y + this.halfActualSize(), (float)other_pos[0], (float)other_pos[1]);
+        
+        if(distance <= key.returnValues()[2] && !this.agentOnFood){
+          this.food = key;
+          this.agentFilter.baseInteraction("food", this);
+          key.reset();
+          break;
+        } 
+      
+      }
+      
     }
-  
+   
   }
   
   // We should check collision for any soundwaves
@@ -183,14 +230,25 @@ abstract class Agent {
     for(Map.Entry<Integer, Agent> agent : agentDict.entrySet()){
       Agent key = agent.getValue();
       
-      if (key.agentSound.intensity != 0 && key != this){
+      if (key != this){
       
         // Get the relative positions for the sound wave
-        pushMatrix();
-        double[] other_pos = GetSoundWavePosition(key);
-        float distance = dist(this.x, this.y, (float)other_pos[0], (float)other_pos[1]);
-        if(showSoundRaycasts) line(this.x + this.halfActualSize(), this.y + this.halfActualSize(), (float)other_pos[0], (float)other_pos[1]);
-        popMatrix();
+        if(key.agentSound != null){
+          pushMatrix();
+          double[] other_pos = GetSoundWavePosition(key);
+          float distance = dist(this.x, this.y, (float)other_pos[0], (float)other_pos[1]);
+          if(showSoundRaycasts) line(this.x + this.halfActualSize(), this.y + this.halfActualSize(), (float)other_pos[0], (float)other_pos[1]); 
+          popMatrix();
+          
+          // This is if we're catching a sound either to us or from the side 
+          if(distance <= 50 && this.agentSound.talking == false) {
+            
+            this.agentFilter.processSound(key.agentSound);
+            
+            return; // We're only processing one interaction at a time
+          }
+        }
+       
         
         // Get the relative positions for the other agent compared to yourself
         pushMatrix();
@@ -198,18 +256,10 @@ abstract class Agent {
         if(showRaycasts) line(this.x + this.halfActualSize(), this.y + this.halfActualSize(), (float)other_pos_agent[0], (float)other_pos_agent[1]);
         popMatrix();
         
-        // This is if we're catching a sound either to us or from the side 
-        if(distance <= 50) {
-          
-          this.agentFilter.processSound(key.agentSound);
-          
-          return; // We're only processing one interaction at a time
-        }
-        
         float distance_agent = dist(this.x, this.y, (float)other_pos_agent[0], (float)other_pos_agent[1]);
-        if(distance_agent <= 50 && this.agentFilter.talking == false) {
-          agentSound = this.agentFilter.processSound(key.agentSound); 
-          this.agentFilter.talking = true;
+        if(distance_agent <= 50 && this.agentSound.talking == false) {
+          agentSound = this.agentFilter.makeDefaultSound(); 
+          this.agentSound.talking = true;
         }
         
       }
@@ -225,12 +275,12 @@ abstract class Agent {
        for(Map.Entry<Agent, Float> entry : getRelationship.entrySet()){
         Agent key = entry.getKey();
         
-        if(key == this) continue;
+        if(key == this || key.dead == true) continue;
         
         double[] other_pos_agent = GetAgentPosition(key);
         
         print("TEST: " + entry.getValue().floatValue() + "||" );
-        strokeWeight(entry.getValue().floatValue() * 12);
+        strokeWeight(entry.getValue().floatValue() * 2);
         
         pushMatrix();
         line(this.x + this.halfActualSize(), this.y + this.halfActualSize(), (float)other_pos_agent[0], (float)other_pos_agent[1]);
@@ -243,8 +293,10 @@ abstract class Agent {
   
   // Sound functionality
   void soundOut() {
-    agentSound.update();
-    agentSound.display();
+    if(this.agentSound != null){
+      agentSound.update();
+      agentSound.display(); 
+    }
   }
   
   // Debugging interfaces
@@ -287,15 +339,16 @@ class SoundWave {
   // Tone of wave
   double base; 
   
-  Agent from;
-  Agent dest; 
+  // Flag
+  boolean talking = false;
   
-  SoundWave(Agent referenceParentP, Agent directedAt, double base){
-    this.from = referenceParentP;
-    this.dest = directedAt;
+  Agent origin;
+  
+  SoundWave(Agent origin, double base){
+    this.origin = origin;
     this.base = base;
     intensity = 0;
-    maxInt = ((float)base * 100)*2;
+    maxInt = 100;
   }
   
   void setIntensity(int intensityP) {
@@ -314,6 +367,7 @@ class SoundWave {
      intensity -= 1;
    } else if(reverse == 0) {
      intensity += 1; 
+     talking = false;
    }
   }
   
@@ -321,7 +375,7 @@ class SoundWave {
     noFill();
     stroke(0.1);
     pushMatrix();
-    translate(from.x+from.halfActualSize(), from.y+from.halfActualSize());
+    translate(origin.x+origin.halfActualSize(), origin.y+origin.halfActualSize());
     circle(0, 0, intensity); 
     popMatrix();
   }
@@ -334,7 +388,7 @@ class Filter {
   Agent parentReference; 
   
   // Base 
-  float base = 0.1;
+  float base = 0;
   
   // Memory related items
   Map<Float, Agent> agentInteractionMemory = new HashMap<>();
@@ -352,8 +406,12 @@ class Filter {
   }
   
   float baseCalc(){
+    if(this.agentInteractionMemory.size() == 0){
+      return this.base; 
+    }
+    
     float sum = 0.1;
-    int count = 0;
+    int count = 1;
     for(Map.Entry<Float, Agent> entry : agentInteractionMemory.entrySet()){
       sum += entry.getKey();
       count++; 
@@ -381,57 +439,49 @@ class Filter {
     
     agentInteractionMemory.put(base, reference);
     
-    // Input into the agentPerAgentMemory
-    if(reference != parentReference){
-      if(agentPerAgentMemory.get(reference) == null){
-        agentPerAgentMemory.put(reference, base);
-      }
-    }
+    // Process
+    this.baseCalc();
   }
   
   SoundWave makeDefaultSound(){
     float sum = 0.1;
-    int count = 0;
+    int count = 1;
     for(Map.Entry<Float, Agent> entry : agentInteractionMemory.entrySet()){
       sum += entry.getKey();
       count++; 
     }
     
     float avg = sum/count;
+    //print("AVERAGE SOUND: " + avg);
     
-    return new SoundWave(parentReference, null, avg);
+    return new SoundWave(parentReference, avg);
   }
   
   SoundWave processSound(SoundWave sound) {
     
-    Agent origin = sound.from;
-    Agent dest = sound.dest;
+    Agent origin = sound.origin;
     
-    float sum = 0.1;
-    int count = 0;
-    for(Map.Entry<Float, Agent> entry : agentInteractionMemory.entrySet()){
-      sum += entry.getKey();
-      count++; 
-    }
+    baseCalc();
     
-    float avg = sum/count;
+    SoundWave soundSend = new SoundWave(parentReference, base);
     
-    SoundWave soundSend = new SoundWave(origin, null, avg);
-    
-    if(dest == parentReference) {
-      this.talking = true;
+    if(origin != parentReference) {
       
       // Process
-      float eatRatio = (dest.eaten/origin.eaten);
-      float relRatio = (dest.relationships/origin.relationships);
-      float kidsRatio = (dest.kids/origin.kids);
+      float eatRatio = (parentReference.eaten/origin.eaten);
+      float relRatio = (parentReference.relationships/origin.relationships);
+      float kidsRatio = (parentReference.kids/origin.kids);
       
       float normal = (eatRatio + relRatio + kidsRatio);
       
-      this.agentInteractionMemory.put(avg/normal, origin);
+      this.agentInteractionMemory.put(base/normal, origin);
       
-      // Send back a soundwave directed at them
-      sound = new SoundWave(dest, origin, avg/normal);
+      // This puts the base in the agent memory
+      if(this.agentPerAgentMemory.get(origin) == null) this.agentPerAgentMemory.put(origin, base/this.agentPerAgentMemory.size());
+      else {
+        this.agentPerAgentMemory.put(origin, (this.agentPerAgentMemory.get(origin) + base)/this.agentPerAgentMemory.size()+1);
+      }
+      
     }
     
     return soundSend;

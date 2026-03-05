@@ -3,7 +3,10 @@ class HumanBaby extends Agent {
   HumanBabyHat tophat;
   int dim;
   float s = 0;
-  int alive_time = 0;
+  int alive_time = 0; 
+  
+  //Flag 
+  boolean grown_up = false;
   
   
   HumanBaby(float xpos, float ypos, float s) { 
@@ -17,6 +20,7 @@ class HumanBaby extends Agent {
     alive_time++;
     
     if(alive_time >= 10){
+      grown_up = true;
       return new Human(x, y, s, (float)40);
     }
     return null;
@@ -28,6 +32,7 @@ class HumanBaby extends Agent {
     fill(red, blue, green);
     pushMatrix();
     translate(x, y);
+    //print("BABY POSITION" + x + y);
     circle(0, 0, dim);
     popMatrix();
     centereye.display();

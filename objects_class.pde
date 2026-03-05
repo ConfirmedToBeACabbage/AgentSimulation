@@ -1,7 +1,8 @@
-interface Object { 
+interface Object {
   String identifier();
   void display();
   float[] returnValues();
+  void reset();
 }
 
 class Rock implements Object {
@@ -46,6 +47,8 @@ class Rock implements Object {
   float[] returnValues(){
     return new float[]{x, y, dim/2}; 
   }
+  
+  void reset(){}
 
 }
 
@@ -76,6 +79,7 @@ class Food implements Object {
   void display(){
     fill(0, 255, 0);
     pushMatrix();
+    translate(x, y);
     beginShape();
     for(PVector v : vertices) { 
       vertex(v.x, v.y); 
@@ -85,11 +89,16 @@ class Food implements Object {
   }
   
   String identifier() { 
-    return "grass"; 
+    return "food"; 
   }
   
   float[] returnValues(){
     return new float[]{x, y, dim/2}; 
+  }
+  
+  void reset(){
+    this.x = random(0, 850);
+    this.y = random(200, 850);
   }
   
 }
