@@ -402,8 +402,4 @@ class Filter {
     return soundSend;
   } //<>// //<>// //<>// //<>// //<>//
   
-  double sigmoid(double x) {
-    return 1 / (1 + Math.exp(-x));
-  }
-  
 }
