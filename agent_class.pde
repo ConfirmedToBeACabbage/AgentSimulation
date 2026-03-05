@@ -8,20 +8,33 @@ abstract class Agent {
   int max_idle;
   
   // Sound 
-  SoundWave agentSound = new SoundWave(this, 0.8);
+  SoundWave agentSound = new SoundWave(null);
   
   // Filter 
-  Filter agentFilter = new Filter(this, 0.8);
+  Filter agentFilter = new Filter(this);
   
   // Debug Flags
   boolean showRelationships = false;
   boolean showRaycasts = false; 
   boolean showSoundRaycasts = false;
   
-  // Flags
+  // General Flags
   boolean processing = false;
   boolean newAgent = false;
   boolean babyHad = false;
+  boolean starving = false;
+  
+  // Object Flags
+  boolean agentOnRock = false;
+  boolean agentOnFood = false;
+  
+  // Agent items
+  int eaten = 0;
+  int relationships = 0;
+  int kids = 0;
+  
+  float hungry = 100; // Loses itself by 0.01 every cycle
+  float health = 100; // If starving loses itself by 0.01
   
   Agent(float xpos, float ypos, float s) { 
     x = xpos; 
@@ -79,6 +92,16 @@ abstract class Agent {
     return calc;
   }
   
+  double[] GetObjectPosition(Object from){
+    float[] getValues = from.returnValues();
+    double change_x = this.x - (getValues[0] + getValues[2]);
+    double change_y = this.y - (getValues[1] + getValues[2]);
+    
+    double angle = Math.atan2(change_y, change_x);
+    double[] calc = {(getValues[0] + getValues[2]) + (getValues[2]) * Math.cos(angle), (getValues[1] + getValues[2]) + (getValues[2]/2) * Math.sin(angle)};
+    return calc;
+  }
+  
   HumanBaby babyCheck() {
     if(babyHad) return null;
     if(this.agentFilter.mood >= 1.0){
@@ -90,10 +113,62 @@ abstract class Agent {
     return null;
   }
   
+  // The collision checking for objects
+  void colCheckObj(Map<Integer, Object> rockDict, Map<Integer, Object> foodDict){
+    
+    // Loop rocks
+      // If we hit a rock we process a base of -0.1
+      
+    // Loop food 
+      // If we hit food we process a base of 0.5
+  
+    int check = 0;
+    for(Map.Entry<Integer, Object> entry : rockDict.entrySet()){
+      Object key = entry.getValue();
+      
+      double[] other_pos = GetObjectPosition(key);
+      float distance = dist(this.x, this.y, (float)other_pos[0], (float)other_pos[1]);
+      
+      if(distance <= 50){
+        this.agentOnRock = true;
+        this.agentFilter.baseInteraction("rock", this);
+        break;
+      } 
+      
+      check++;
+      
+    }
+    
+    if(check == rockDict.size()-1){
+      this.agentOnRock = false;  
+    }
+    
+    check = 0;
+    
+    for(Map.Entry<Integer, Object> entry : foodDict.entrySet()){
+      Object key = entry.getValue();
+      
+      double[] other_pos = GetObjectPosition(key);
+      float distance = dist(this.x, this.y, (float)other_pos[0], (float)other_pos[1]);
+      
+      if(distance <= 10){
+        this.agentOnFood = true;
+        this.agentFilter.baseInteraction("food", this);
+        break;
+      } 
+      
+      check++;
+      
+    }
+    
+    if(check == foodDict.size()-1){
+      this.agentOnFood = false;  
+    }
+  
+  }
+  
   // We should check collision for any soundwaves
   void colCheck(Map<Integer, Agent> agentDict) {
-    
-    float counter_collided = 0;
     
     for(Map.Entry<Integer, Agent> agent : agentDict.entrySet()){
       Agent key = agent.getValue();
@@ -113,43 +188,32 @@ abstract class Agent {
         if(showRaycasts) line(this.x + this.halfActualSize(), this.y + this.halfActualSize(), (float)other_pos_agent[0], (float)other_pos_agent[1]);
         popMatrix();
         
-        //print(" " + distance);
-        
-        float distance_agent = dist(this.x, this.y, (float)other_pos_agent[0], (float)other_pos_agent[1]);
-        if(distance_agent <= 400 && this.agentSound.talking == false) {
-          float random_talk = random(0, 5);
-          if(random_talk == 1){
-            agentSound = new SoundWave(this, 0.8);
-          }
+        // This is if we're catching a sound either to us or from the side 
+        if(distance <= 50) {
           
-          counter_collided += 0.5;
+          this.agentFilter.processSound(key.agentSound);
+          
+          return; // We're only processing one interaction at a time
         }
         
-        // If the soundwave is close to our character we then act on it
-        if(distance <= 50 && this.agentSound.talking == false) {
-          agentSound = agentFilter.process(key.agentSound); // Set new sound
-          counter_collided += 1;
-          return; // We're only processing one sound at a time
+        float distance_agent = dist(this.x, this.y, (float)other_pos_agent[0], (float)other_pos_agent[1]);
+        if(distance_agent <= 50 && this.agentFilter.talking == false) {
+          float random_talk = random(0, 2);
+          agentSound = this.agentFilter.processSound(this, key); 
+          this.agentFilter.talking = true;
         }
         
       }
        //<>//
     }
     
-    if(counter_collided < 1){
-      int rand = (int)random(1, 3);
-      if(rand == 1 || rand == 2){
-        this.agentFilter.moodEntropy(); 
-      }
-    }
-    
   }
   
   void relationshipDisplay() {
-    Map<Agent, Double> getRelationship = this.agentFilter.getRelationships();
+    Map<Agent, Float> getRelationship = this.agentFilter.getRelationships();
     
     if(showRelationships){
-       for(Map.Entry<Agent, Double> entry : getRelationship.entrySet()){
+       for(Map.Entry<Agent, Float> entry : getRelationship.entrySet()){
         Agent key = entry.getKey();
         
         if(key == this) continue;
@@ -188,8 +252,8 @@ abstract class Agent {
   }
   
   void reset() {
-     agentSound = new SoundWave(this, 0.8);
-     agentFilter = new Filter(this, 0.8);
+     agentSound = this.agentFilter.makeSound(null); 
+     agentFilter = new Filter(this);
      x = random(100, 700);
      y = random(400, 700);
      moving_time = 0;
@@ -211,18 +275,18 @@ class SoundWave {
   float intensity, maxInt;
   int reverse = 0;
   
-  boolean talking = false;
-  
   // Tone of wave
-  double tone; 
+  double base; 
   
-  Agent referenceParent;
-  SoundWave(Agent referenceParentP, double toneP){
-    referenceParent = referenceParentP;
-    tone = toneP;
+  Agent from;
+  Agent dest; 
+  
+  SoundWave(Agent referenceParentP, Agent directedAt, double base){
+    this.from = referenceParentP;
+    this.dest = directedAt;
+    this.base = base;
     intensity = 0;
-    maxInt = (float)tone * 100;
-    //print(maxInt);
+    maxInt = ((float)base * 100)*2;
   }
   
   void setIntensity(int intensityP) {
@@ -235,7 +299,6 @@ class SoundWave {
      reverse = 1;
    } else if(intensity < 0) {
      reverse = -1;
-     talking = false;
    }
    
    if(reverse == 1){
@@ -249,7 +312,7 @@ class SoundWave {
     noFill();
     stroke(0.1);
     pushMatrix();
-    translate(referenceParent.x+referenceParent.halfActualSize(), referenceParent.y+referenceParent.halfActualSize());
+    translate(from.x+from.halfActualSize(), from.y+from.halfActualSize());
     circle(0, 0, intensity); 
     popMatrix();
   }
@@ -258,84 +321,86 @@ class SoundWave {
 // The filter through which the agent views everything
 class Filter { 
   
-  // Memory portion
-  Map<Agent, Double> memoryDictionary = new HashMap<>(); 
-  
-  // Current relationships 
-  Map<Agent, Double> relationshipDictionary = new HashMap<>();
-  
-  // Current Status
-  double mood; 
-  
   // Reference
   Agent parentReference; 
   
-  Filter(Agent getReference, double moodP){ 
-    mood = moodP; 
+  // Base 
+  float base = 0.1;
+  
+  // Memory related items
+  Map<Float, Agent> agentInteractionMemory = new HashMap<>();
+  Map<Agent, Float> agentPerAgentMemory = new HashMap<>();
+  
+  // Flags
+  boolean talking = false;
+  
+  Filter(Agent getReference){ 
     parentReference = getReference;
-    memoryDictionary.put(parentReference, moodP);
   }
   
-  void moodEntropy() { 
-    if(mood >= 0.5) {
-      mood -= 0.1; 
-    }
+  Map<Agent, Float> getRelationships(){
+    return this.agentPerAgentMemory;
   }
   
-  // Filter Process
-  SoundWave process(SoundWave input) { //<>//
-    double zero = 1; //<>//
-    double overall_average = 1; //<>//
-    int counter = 0;
+  void baseInteraction(String identity, Agent reference) { 
     
-    if(relationshipDictionary.get(input.referenceParent) == null) {
-      relationshipDictionary.put(input.referenceParent, zero); 
+    float base = 0;
+    
+    switch(identity){ 
+      case "rock":
+        base = -0.1;
+      case "food":
+        base = 0.5;
+      case "die": 
+        base = -1.0;
+      case "baby": 
+        base = 1.0;
     }
     
-    for(Map.Entry<Agent, Double> entry : memoryDictionary.entrySet()){ //<>//
-      // Sum up all of your memory 
-      // Get an average of per agent (so the memories on average for the agents)
-      // Get an overall average
-      // Use the average of per agent to update relationship scales
-      // Use the overall overage influence the response
-      
-      Agent key = entry.getKey();
-      double value = entry.getValue();
-      double weight = 1;
-      double result = 0;
-      
-      // Adding up 
-      if(relationshipDictionary.get(key) == null) {
-        relationshipDictionary.put(key, zero); 
-        weight = 1.2;
+    agentInteractionMemory.put(base, reference);
+    
+    // Input into the agentPerAgentMemory
+    if(reference != parentReference){
+      if(agentPerAgentMemory.get(reference) == null){
+        agentPerAgentMemory.put(reference, base);
       }
-      
-      if (key == input.referenceParent) {
-        result = value + relationshipDictionary.get(key) * weight * input.tone;
-        relationshipDictionary.put(key, result); 
-      }
-      
-      overall_average += result; //<>//
-      counter++;
+    }
+  }
+  
+  SoundWave processSound(SoundWave sound) {
+    
+    Agent origin = sound.from;
+    Agent dest = sound.dest;
+    
+    float sum = 0.1;
+    int count = 0;
+    for(Map.Entry<Float, Agent> entry : agentInteractionMemory.entrySet()){
+      sum += entry.getKey();
+      count++; 
     }
     
-    double old_mood = mood; 
-    mood = sigmoid(mood * input.tone) + sigmoid(overall_average/counter);    
-    double ratio = old_mood/mood;
+    float avg = sum/count;
     
-    relationshipDictionary.put(input.referenceParent, relationshipDictionary.get(input.referenceParent) * mood);
+    SoundWave soundSend = new SoundWave(origin, null, avg);
     
-    SoundWave response = new SoundWave(parentReference, mood * ratio);
-    return response; 
-  }
-  
-  public Map<Agent, Double> getRelationships() { 
-    return this.relationshipDictionary;
-  }
-  
-  public double getMood() { 
-    return this.mood;
-  }
+    if(dest == parentReference) {
+      this.talking = true;
+      
+      // Process
+      float eatRatio = (dest.eaten/origin.eaten);
+      float relRatio = (dest.relationships/origin.relationships);
+      float kidsRatio = (dest.kids/origin.kids);
+      
+      float normal = (eatRatio + relRatio + kidsRatio);
+      
+      this.agentInteractionMemory.put(avg/normal, origin);
+      
+      // Send back a soundwave directed at them
+      sound = new SoundWave(dest, origin, avg/normal);
+    }
+    
+    return soundSend;
+  } //<>// //<>// //<>// //<>// //<>//
   
   double sigmoid(double x) {
     return 1 / (1 + Math.exp(-x));

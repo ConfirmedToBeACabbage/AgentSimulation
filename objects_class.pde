@@ -1,6 +1,7 @@
 interface Object { 
   String identifier();
   void display();
+  float[] returnValues();
 }
 
 class Rock implements Object {
@@ -40,6 +41,10 @@ class Rock implements Object {
   
   String identifier() { 
     return "rock"; 
+  }
+  
+  float[] returnValues(){
+    return new float[]{x, y, dim/2}; 
   }
 
 }
@@ -81,6 +86,10 @@ class Food implements Object {
   
   String identifier() { 
     return "grass"; 
+  }
+  
+  float[] returnValues(){
+    return new float[]{x, y, dim/2}; 
   }
   
 }
