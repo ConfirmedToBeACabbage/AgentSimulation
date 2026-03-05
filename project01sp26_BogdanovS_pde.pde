@@ -46,7 +46,7 @@ void setup() {
   size(860, 860);
   
   // Init agents
-  for(int i = 0; i < 10; i++) {
+  for(int i = 0; i < 5; i++) {
     float xPlace = random(100, 700);
     float yPlace = random(210, 700);
     
@@ -54,7 +54,7 @@ void setup() {
     agentDict.put(i, put);
   }
   
-  for(int i = 0; i < 100; i++) {
+  for(int i = 0; i < 200; i++) {
     float xRock = random(10, 850);
     float yRock = random(210, 850);
     
@@ -62,7 +62,7 @@ void setup() {
     float yGrass = random(210, 850); 
     
     Object newObj;
-    if(i < 20){
+    if(i < 10){
     
       if(xRock + 50 > xGrass && yGrass + 50 > yGrass || xRock - 50 < xGrass && yRock - 50 < yGrass) {
         xRock = random(xRock + 50, (700)-xRock-50);
@@ -161,6 +161,7 @@ void draw() {
     rect(600, 55, 200, 10); 
     popMatrix();
     
+    fill(0);
     text("Human Number", 320, 110);
     text(agentDict.size() - deadAgentDict.size(), 600, 110);
     

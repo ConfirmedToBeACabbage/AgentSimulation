@@ -142,7 +142,7 @@ abstract class Agent {
   // Baby check 
   HumanBaby babyCheck() {
     if(babyHad) return null;
-    if(this.agentFilter.base >= 0.2 && this.health >= 50){
+    if(this.agentFilter.base >= 0.1 && this.health >= 50){
       this.babyHad = true;
       //print("MAKING BABY");
       //print(x);

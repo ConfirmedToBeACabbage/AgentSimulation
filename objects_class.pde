@@ -79,7 +79,6 @@ class Food implements Object {
   void display(){
     fill(0, 255, 0);
     pushMatrix();
-    translate(x, y);
     beginShape();
     for(PVector v : vertices) { 
       vertex(v.x, v.y); 
