@@ -1,4 +1,5 @@
 interface Object { 
+  String identifier();
   void display();
 }
 
@@ -18,8 +19,8 @@ class Rock implements Object {
     
     for(int i = 0; i < sides; i++) {
       float angle = TWO_PI / sides * i; 
-      float offsetX = random(-3, 3);
-      float offsetY = random(-3, 3);
+      float offsetX = random(-6, 6);
+      float offsetY = random(-6, 6);
       float xnext = x + cos(angle) * (dim / 2 + offsetX);
       float ynext = y + sin(angle) * (dim / 2 + offsetY);
       vertices[i] = new PVector(xnext, ynext);
@@ -28,31 +29,58 @@ class Rock implements Object {
   
   void display(){
     fill(190, 190, 190);
+    pushMatrix();
     beginShape();
     for(PVector v : vertices) { 
       vertex(v.x, v.y); 
     }
     endShape(CLOSE);
+    popMatrix();
+  }
+  
+  String identifier() { 
+    return "rock"; 
   }
 
 }
 
-class Grass implements Object { 
+class Food implements Object { 
   float x, y, dim;
-  
-  Grass(float x, float y, float dim) {
+  int sides; 
+
+  PVector[] vertices;
+
+  Food(float x, float y, float dim, int sides){
     this.x = x;
     this.y = y;
-    this.dim = dim;    
+    this.dim = dim;
+    this.sides = sides;
+    
+    this.vertices = new PVector[sides];
+    
+    for(int i = 0; i < sides; i++) {
+      float angle = TWO_PI / sides * i; 
+      float offsetX = random(-1, 1);
+      float offsetY = random(-1, 1);
+      float xnext = x + cos(angle) * (dim / 2 + offsetX);
+      float ynext = y + sin(angle) * (dim / 2 + offsetY);
+      vertices[i] = new PVector(xnext, ynext);
+    }
   }
   
-  void display() {
-    stroke(1);
-    fill(0, 240, 0);
+  void display(){
+    fill(0, 255, 0);
     pushMatrix();
-    translate(x, y);
-    circle(0, 0, dim);
+    beginShape();
+    for(PVector v : vertices) { 
+      vertex(v.x, v.y); 
+    }
+    endShape(CLOSE);
     popMatrix();
+  }
+  
+  String identifier() { 
+    return "grass"; 
   }
   
 }

@@ -3,7 +3,8 @@ import java.util.Map;
 
 Map<Integer, Agent> agentDict = new HashMap<>(); 
 Map<Integer, HumanBaby> babyDict = new HashMap<>();
-Map<Integer, Object> objDict = new HashMap<>();
+Map<Integer, Object> rockObjDict = new HashMap<>();
+Map<Integer, Object> grassObjDict = new HashMap<>();
 Object poppedObj;
 Agent popped; 
 Agent inspecting = null;
@@ -53,12 +54,28 @@ void setup() {
     agentDict.put(i, put);
   }
   
-  for(int i = 0; i < 10; i++) {
-    float xPlace = random(100, 700);
-    float yPlace = random(210, 700);
+  for(int i = 0; i < 100; i++) {
+    float xRock = random(10, 850);
+    float yRock = random(210, 850);
     
-    Object newObj = new Rock(xPlace, yPlace, random(40, 60), (int)random(5, 12));
-    objDict.put(i, newObj);
+    float xGrass = random(10, 850); 
+    float yGrass = random(210, 850); 
+    
+    Object newObj;
+    if(i < 20){
+    
+      if(xRock + 50 > xGrass && yGrass + 50 > yGrass || xRock - 50 < xGrass && yRock - 50 < yGrass) {
+        xRock = random(xRock + 50, (700)-xRock-50);
+        yRock = random(yRock + 50, (700)-yRock-50);
+      }
+      
+      newObj = new Rock(xRock, yRock, random(40, 60), (int)random(5, 12));
+      rockObjDict.put(i, newObj);
+
+    }
+    
+    newObj = new Food(xGrass, yGrass, random(10, 12), (int)random(10, 20));
+    grassObjDict.put(i, newObj);
   }
   
   // Init buttons
@@ -79,11 +96,17 @@ void draw() {
   line(300, 0, 300, 200);
   
   // Background
-  fill(0, 230, 0);
+  fill(100, 230, 0);
   rect(-1, 200, 861, 660);
   
-  for(int i = 0; i < objDict.size(); i++) {
-     poppedObj = objDict.get(i);
+  for(int i = 0; i < rockObjDict.size(); i++) {
+     poppedObj = rockObjDict.get(i);
+     
+     poppedObj.display();
+  }
+  
+  for(int i = 0; i < grassObjDict.size(); i++) {
+     poppedObj = grassObjDict.get(i);
      
      poppedObj.display();
   }
@@ -132,7 +155,7 @@ void draw() {
     popMatrix();
     
     text("Human Number", 320, 110);
-    text(agentDict.size(), 600, 110);
+    text(agentDict.size()-numbBaby, 600, 110);
     
     text("Baby number", 320, 150);
     text(numbBaby, 600, 150);
@@ -142,12 +165,15 @@ void draw() {
   for(int i = 0; i < before_size; i++){
     popped = agentDict.get(i);
     
-    if(popped == null) continue;
+    if(popped == null) {
+     continue;
+    }
     
     HumanBaby check = popped.babyCheck();
     if(check != null){
      print("||" + check);
      babyDict.put(babyDict.size() + 1, check); 
+     numbBaby++;
     }
     
     popped.soundOut();
@@ -172,7 +198,10 @@ void draw() {
     print("||" + year);
     if(year >= 10){
       Human check = hbPopped.live(); 
-      if(check != null) agentDict.put(agentDict.size() + 1, check);
+      if(check != null) {
+        agentDict.put(agentDict.size() + 1, check);
+        numbBaby--; 
+      }
       year = 0;
     }
     
