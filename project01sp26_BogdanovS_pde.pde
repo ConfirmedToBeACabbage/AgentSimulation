@@ -126,10 +126,10 @@ void draw() {
     // Some global stats
     textSize(30);
     text("Mood", 320, 70);
-    text((float)inspecting.agentFilter.mood, 600, 70);
+    text(inspecting.agentFilter.baseCalc(), 600, 70);
     
     text("Relationships", 320, 110);
-    text(constrain(inspecting.agentFilter.relationshipDictionary.size() - 1, 0, inspecting.agentFilter.relationshipDictionary.size()), 600, 110);
+    text(constrain(inspecting.agentFilter.agentPerAgentMemory.size() - 1, 0, inspecting.agentFilter.agentPerAgentMemory.size()), 600, 110);
     
   } else {
     
@@ -146,7 +146,7 @@ void draw() {
     float sum = 0;
     for(Map.Entry<Integer, Agent> agent : agentDict.entrySet()){
       Agent key = agent.getValue();
-      sum += (float)key.agentFilter.mood;
+      sum += key.agentFilter.base;
       counter++;
     }
     

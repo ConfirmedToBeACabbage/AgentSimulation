@@ -8,7 +8,7 @@ abstract class Agent {
   int max_idle;
   
   // Sound 
-  SoundWave agentSound = new SoundWave(null);
+  SoundWave agentSound;
   
   // Filter 
   Filter agentFilter = new Filter(this);
@@ -33,7 +33,7 @@ abstract class Agent {
   int relationships = 0;
   int kids = 0;
   
-  float hungry = 100; // Loses itself by 0.01 every cycle
+  float hungry = 0; // Loses itself by 0.01 every cycle
   float health = 100; // If starving loses itself by 0.01
   
   Agent(float xpos, float ypos, float s) { 
@@ -102,11 +102,19 @@ abstract class Agent {
     return calc;
   }
   
+  // Health update
+  void healthUpdate(){
+    hungry += 0.01;
+    
+    if(hungry >= 30){
+      eaten += eaten * (hungry); 
+    }
+  }
+  
+  // Baby check 
   HumanBaby babyCheck() {
     if(babyHad) return null;
-    if(this.agentFilter.mood >= 1.0){
-      print("||" + this.agentFilter.mood);
-      this.agentFilter.mood = 0.5;
+    if(this.agentFilter.base >= 1.0 && this.health >= 50){
       this.babyHad = true;
       return new HumanBaby(x, y, speed);
     }
@@ -132,6 +140,7 @@ abstract class Agent {
       if(distance <= 50){
         this.agentOnRock = true;
         this.agentFilter.baseInteraction("rock", this);
+        this.hungry += 5;
         break;
       } 
       
@@ -154,6 +163,7 @@ abstract class Agent {
       if(distance <= 10){
         this.agentOnFood = true;
         this.agentFilter.baseInteraction("food", this);
+        this.hungry -= 5;
         break;
       } 
       
@@ -198,8 +208,7 @@ abstract class Agent {
         
         float distance_agent = dist(this.x, this.y, (float)other_pos_agent[0], (float)other_pos_agent[1]);
         if(distance_agent <= 50 && this.agentFilter.talking == false) {
-          float random_talk = random(0, 2);
-          agentSound = this.agentFilter.processSound(this, key); 
+          agentSound = this.agentFilter.processSound(key.agentSound); 
           this.agentFilter.talking = true;
         }
         
@@ -252,7 +261,7 @@ abstract class Agent {
   }
   
   void reset() {
-     agentSound = this.agentFilter.makeSound(null); 
+     agentSound = this.agentFilter.makeDefaultSound(); 
      agentFilter = new Filter(this);
      x = random(100, 700);
      y = random(400, 700);
@@ -333,13 +342,28 @@ class Filter {
   
   // Flags
   boolean talking = false;
-  
+    
   Filter(Agent getReference){ 
     parentReference = getReference;
   }
   
   Map<Agent, Float> getRelationships(){
     return this.agentPerAgentMemory;
+  }
+  
+  float baseCalc(){
+    float sum = 0.1;
+    int count = 0;
+    for(Map.Entry<Float, Agent> entry : agentInteractionMemory.entrySet()){
+      sum += entry.getKey();
+      count++; 
+    }
+    
+    float avg = sum/count;
+    
+    this.base = avg;
+    
+    return this.base;
   }
   
   void baseInteraction(String identity, Agent reference) { 
@@ -351,8 +375,6 @@ class Filter {
         base = -0.1;
       case "food":
         base = 0.5;
-      case "die": 
-        base = -1.0;
       case "baby": 
         base = 1.0;
     }
@@ -365,6 +387,19 @@ class Filter {
         agentPerAgentMemory.put(reference, base);
       }
     }
+  }
+  
+  SoundWave makeDefaultSound(){
+    float sum = 0.1;
+    int count = 0;
+    for(Map.Entry<Float, Agent> entry : agentInteractionMemory.entrySet()){
+      sum += entry.getKey();
+      count++; 
+    }
+    
+    float avg = sum/count;
+    
+    return new SoundWave(parentReference, null, avg);
   }
   
   SoundWave processSound(SoundWave sound) {
