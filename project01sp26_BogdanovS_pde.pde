@@ -46,7 +46,7 @@ void setup() {
   size(860, 860);
   
   // Init agents
-  for(int i = 0; i < 5; i++) {
+  for(int i = 0; i < 20; i++) {
     float xPlace = random(100, 700);
     float yPlace = random(210, 700);
     
